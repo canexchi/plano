@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plano Alimentar</title>
+<meta name="description" content="Plano alimentar, hidratação e acompanhamento corporal.">
+<meta name="theme-color" content="#FAF6F0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<div class="orbs" aria-hidden="true">
+  <span class="orb orb-1"></span>
+  <span class="orb orb-2"></span>
+  <span class="orb orb-3"></span>
+  <span class="orb orb-4"></span>
+</div>
+
+<header class="app-header">
+  <div>
+    <h1 class="eyebrow">Plano Alimentar</h1>
+    <p class="user-name" id="dayLabel"></p>
+  </div>
+  <div class="header-right">
+    <button id="infoBtn" class="icon-btn" title="Informações do plano" aria-expanded="false">i</button>
+  </div>
+</header>
+
+<div id="infoCard" class="info-card" hidden>
+  <p class="info-title">Sobre o plano</p>
+  <p>Prescrito em 04/07/2022.</p>
+  <p class="info-quote">Respeite os horários de alimentação e mantenha a constância. As substituições estão calculadas para manter o equilíbrio de macros.</p>
+  <p class="info-foot mono">O dia vira às 05:00 — o que você marcar de madrugada conta para o dia anterior.</p>
+</div>
+
+<main id="view" class="view"></main>
+
+<nav class="tabbar" role="tablist">
+  <button class="tabbar-btn is-active" data-view="hoje" role="tab">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v9a3 3 0 0 0 3 3v6M8 3v6M11 3v6M17.5 3c-1.2 2-1.8 4-1.8 6.5 0 1.5.6 2.3 1.8 2.5v9"/></svg>
+    <span>Hoje</span>
+  </button>
+  <button class="tabbar-btn" data-view="historico" role="tab">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span>Histórico</span>
+  </button>
+  <button class="tabbar-btn" data-view="corpo" role="tab">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3.5L20 6"/><path d="M4 21h16"/></svg>
+    <span>Corpo</span>
+  </button>
+  <button class="tabbar-btn" data-view="ajustes" role="tab">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.6M12 18.8v2.6M21.4 12h-2.6M5.2 12H2.6M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8M18.6 18.6l-1.8-1.8M7.2 7.2 5.4 5.4"/></svg>
+    <span>Ajustes</span>
+  </button>
+</nav>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /* Service worker: deixa o app abrir offline.
    Suba o CACHE quando alterar qualquer arquivo do app. */
-const CACHE = 'plano-v4';
+const CACHE = 'plano-v5';
 const ASSETS = [
   '.', 'index.html',
   'assets/styles.css', 'assets/data.js', 'assets/app.js',

@@ -125,13 +125,13 @@ const MEALS_DATA = [
 ];
 
 /* Abas de refeição. "lanche" resolve para lanche_1 ou lanche_2 conforme a opção ativa.
-   `core: true` = entra no cálculo de aderência do dia. */
+   O plano é só consulta: não existe marcar refeição como feita. */
 const MEAL_TABS = [
-  { id: "cafe",       label: "CAFÉ",       core: true  },
-  { id: "pre_treino", label: "PRÉ-TREINO", core: false },
-  { id: "almoco",     label: "ALMOÇO",     core: true  },
-  { id: "lanche",     label: "LANCHE",     core: true  },
-  { id: "jantar",     label: "JANTAR",     core: true  }
+  { id: "cafe",       label: "CAFÉ"       },
+  { id: "pre_treino", label: "PRÉ-TREINO" },
+  { id: "almoco",     label: "ALMOÇO"     },
+  { id: "lanche",     label: "LANCHE"     },
+  { id: "jantar",     label: "JANTAR"     }
 ];
 
 const BODY_FIELDS = [

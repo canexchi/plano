@@ -20,8 +20,9 @@ icons/                  ícones gerados por tools/make_icons.py
   Constante `RESET_HOUR` em `assets/app.js`.
 - **Tudo fica no aparelho** (`localStorage`, chave `saude.plano.v1`). Nenhum servidor, nenhuma conta.
   Limpar os dados do navegador apaga tudo → use **Ajustes → Exportar JSON** de vez em quando.
-- **Aderência** = refeições concluídas ÷ refeições obrigatórias (café, almoço, lanche, jantar).
-  O pré-treino é extra por padrão, para não punir dia sem treino. Dá para mudar em Ajustes.
+- **O plano alimentar é só consulta.** Não existe marcar refeição como feita — é um guia de
+  o que comer e quanto, com os substitutos. O que o app registra é **água e corpo**.
+- **Histórico** acompanha hidratação: média por dia, dias seguidos batendo a meta e % de dias na meta.
 
 ## Rodar no Mac (teste)
 
@@ -44,20 +45,25 @@ O Chrome só oferece "Instalar app" em origem segura — ou seja, **precisa de u
 
 Para atualizar depois: arraste a pasta de novo no mesmo site (ou use GitHub Pages / Cloudflare Pages).
 
-## Virar APK depois (Capacitor)
+## APK (Android nativo)
 
-A pasta já está no formato que o Capacitor consome (`webDir` = raiz). Quando quiser
-notificações locais de verdade nos horários das refeições:
+O APK é compilado na nuvem pelo GitHub Actions — nada de Node, JDK ou Android Studio no Mac.
+O workflow está em `.github/workflows/apk.yml` e roda a cada push no `main`.
 
-```bash
-brew install node openjdk
-npm init -y && npm i @capacitor/core @capacitor/cli @capacitor/local-notifications
-npx cap init "Plano Alimentar" app.plano.alimentar --web-dir=.
-npx cap add android && npx cap open android   # requer Android Studio
-```
+Para baixar: repositório → aba **Actions** → clique na execução mais recente → em *Artifacts*,
+baixe **plano-apk**. Vem um `.zip`; dentro está o `app-debug.apk`.
 
-Alternativa sem instalar Android Studio: um workflow do GitHub Actions compila o APK na nuvem
-e você baixa o artefato.
+Para instalar no celular: mande o `.apk` para o aparelho (Drive, Telegram, cabo), abra pelo
+gerenciador de arquivos e autorize *"instalar apps de fontes desconhecidas"* quando ele pedir.
+
+É um APK de debug, assinado com a chave de debug do Android — instala normalmente,
+mas não serve para publicar na Play Store.
+
+Peças envolvidas:
+
+- `package.json` / `capacitor.config.json` — configuração do Capacitor (`webDir` = `www`)
+- `branding/android/` — ícones do app, gerados por `tools/make_icons.py`
+- a pasta `www/` é montada durante o build; não fica versionada
 
 ## Regenerar os ícones
 

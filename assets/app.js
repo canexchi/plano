@@ -11,9 +11,9 @@
 
   const DEFAULT_STATE = () => ({
     version: 1,
-    prefs: { goalCups: 12, cupMl: 250, lancheOption: 1, countPreTreino: false },
+    prefs: { goalCups: 12, cupMl: 250, lancheOption: 1 },
     subs: {},   // "mealId_itemId" -> índice do substituto (-1 = padrão)
-    days: {},   // "AAAA-MM-DD" -> { water: Number, meals: { [tabId]: true } }
+    days: {},   // "AAAA-MM-DD" -> { water: Number }
     body: []    // [{ date, weight, waist, hip, chest, arm, note }]
   });
 
@@ -82,33 +82,24 @@
   function weekday(key) { return WEEKDAYS[keyToDate(key).getDay()]; }
 
   function day(key = todayKey) {
-    if (!state.days[key]) state.days[key] = { water: 0, meals: {} };
+    if (!state.days[key]) state.days[key] = { water: 0 };
     const d = state.days[key];
     if (typeof d.water !== 'number') d.water = 0;
-    if (!d.meals) d.meals = {};
     return d;
   }
   const dayOrNull = (key) => state.days[key] || null;
 
   /* ---------------- regras do plano ---------------- */
 
-  function requiredTabs() {
-    return MEAL_TABS.filter((t) => t.core || (t.id === 'pre_treino' && state.prefs.countPreTreino));
-  }
-  function dayScore(key) {
-    const d = dayOrNull(key);
-    const req = requiredTabs();
-    if (!d) return { done: 0, total: req.length, water: 0, extra: false };
-    const done = req.filter((t) => d.meals[t.id]).length;
-    const extra = !state.prefs.countPreTreino && !!d.meals.pre_treino;
-    return { done, total: req.length, water: d.water || 0, extra };
-  }
-  const isComplete = (key) => { const s = dayScore(key); return s.total > 0 && s.done === s.total; };
+  const waterOf = (key) => (state.days[key] ? state.days[key].water || 0 : 0);
+  const mlOf = (key) => waterOf(key) * state.prefs.cupMl;
+  const hitGoal = (key) => waterOf(key) >= state.prefs.goalCups;
 
+  /* dias seguidos batendo a meta de água (hoje só conta se já bateu) */
   function streak() {
     let n = 0;
-    let key = isComplete(todayKey) ? todayKey : shiftKey(todayKey, -1);
-    while (isComplete(key)) { n++; key = shiftKey(key, -1); }
+    let key = hitGoal(todayKey) ? todayKey : shiftKey(todayKey, -1);
+    while (hitGoal(key)) { n++; key = shiftKey(key, -1); }
     return n;
   }
 
@@ -183,15 +174,6 @@
     ? 'Meta batida hoje ✓'
     : `Faltam ${(state.prefs.goalCups - d.water) * state.prefs.cupMl}ml — cada ponto = ${state.prefs.cupMl}ml`;
 
-  const checkLabel = (d, tabId) => (d.meals[tabId] ? 'Concluído ✓' : 'Concluir');
-
-  const tabInner = (t, d) => `${d.meals[t.id] ? '<span class="dot"></span>' : ''}${t.label}`;
-
-  function scoreText() {
-    const s = dayScore(todayKey);
-    return `Refeições · ${s.done}/${s.total} concluídas${s.extra ? ' (+ pré-treino)' : ''}`;
-  }
-
   function itemInner(mealId, item) {
     const sel = selectionFor(mealId, item);
     const zero = /^0[\s.,]/.test(sel.qty) || /\(0g\)/.test(sel.qty);
@@ -212,27 +194,13 @@
   /* Atualizações pontuais: nada de redesenhar a tela inteira a cada toque. */
 
   function paintWater() {
-    const d = dayOrNull(todayKey) || { water: 0, meals: {} };
+    const d = dayOrNull(todayKey) || { water: 0 };
     document.querySelectorAll('.water-dot').forEach((b) =>
       b.classList.toggle('is-on', Number(b.dataset.cups) <= d.water));
     const amount = $('.water-amount');
     if (amount) amount.innerHTML = waterAmountInner(d);
     const hint = $('.water-hint');
     if (hint) hint.textContent = waterHint(d);
-  }
-
-  function paintCheck(tabId) {
-    const d = dayOrNull(todayKey) || { water: 0, meals: {} };
-    const btn = $(`.check-btn[data-tab="${tabId}"]`);
-    if (btn) {
-      btn.classList.toggle('is-done', !!d.meals[tabId]);
-      btn.textContent = checkLabel(d, tabId);
-    }
-    const tab = $(`.meal-tab[data-tab="${tabId}"]`);
-    const meta = MEAL_TABS.find((t) => t.id === tabId);
-    if (tab && meta) tab.innerHTML = tabInner(meta, d);
-    const label = el('mealScore');
-    if (label) label.textContent = scoreText();
   }
 
   function paintItem(mealId, itemId) {
@@ -244,7 +212,7 @@
   /* ---------------- view: HOJE ---------------- */
 
   function viewHoje() {
-    const d = dayOrNull(todayKey) || { water: 0, meals: {} };
+    const d = dayOrNull(todayKey) || { water: 0 };
     const goal = state.prefs.goalCups;
     const cup = state.prefs.cupMl;
     const tabId = activeMealTab;
@@ -258,7 +226,7 @@
     }).join('');
 
     const tabs = MEAL_TABS.map((t) => `
-      <button class="meal-tab ${t.id === tabId ? 'is-active' : ''}" data-act="tab" data-tab="${t.id}">${tabInner(t, d)}</button>`).join('');
+      <button class="meal-tab ${t.id === tabId ? 'is-active' : ''}" data-act="tab" data-tab="${t.id}">${t.label}</button>`).join('');
 
     const segmented = tabId === 'lanche' ? `
       <div class="segmented">
@@ -285,7 +253,7 @@
       </section>
 
       <section>
-        <span class="section-label" id="mealScore">${scoreText()}</span>
+        <span class="section-label">Guia de refeições</span>
         <div class="meal-tabs">${tabs}</div>
       </section>
 
@@ -299,7 +267,6 @@
           </div>
           <div class="meal-actions">
             <button class="link-btn" data-act="copy" data-meal="${mealId}">Copiar</button>
-            <button class="check-btn ${d.meals[tabId] ? 'is-done' : ''}" data-act="check" data-tab="${tabId}">${checkLabel(d, tabId)}</button>
           </div>
         </div>
         <div class="items">${items}</div>
@@ -311,35 +278,33 @@
 
   function viewHistorico() {
     const days30 = Array.from({ length: 30 }, (_, i) => shiftKey(todayKey, -(29 - i)));
-    const scores = days30.map(dayScore);
-    const tracked = scores.filter((s) => s.done > 0 || s.water > 0);
-    const totalDone = scores.reduce((a, s) => a + s.done, 0);
-    const totalReq = scores.reduce((a, s) => a + s.total, 0);
-    const adherence = totalReq ? Math.round((totalDone / totalReq) * 100) : 0;
-    const avgWater = tracked.length
-      ? Math.round(tracked.reduce((a, s) => a + s.water, 0) / tracked.length * state.prefs.cupMl)
+    const tracked = days30.filter((k) => waterOf(k) > 0);
+    const goalDays = days30.filter(hitGoal).length;
+    const pct = tracked.length ? Math.round((goalDays / tracked.length) * 100) : 0;
+    const avg = tracked.length
+      ? Math.round(tracked.reduce((a, k) => a + mlOf(k), 0) / tracked.length)
       : 0;
 
     const cells = days30.map((key) => {
-      const s = dayScore(key);
-      const level = s.total ? Math.round((s.done / s.total) * 4) : 0;
+      const ratio = waterOf(key) / state.prefs.goalCups;
+      const level = ratio <= 0 ? 0 : Math.max(1, Math.min(4, Math.ceil(ratio * 4)));
       return `<div class="heat-cell ${key === todayKey ? 'is-today' : ''}" data-level="${level}"
-        title="${labelKey(key)} — ${s.done}/${s.total} refeições, ${s.water * state.prefs.cupMl}ml"></div>`;
+        title="${labelKey(key)} — ${mlOf(key)}ml"></div>`;
     }).join('');
 
+    const weights = Object.fromEntries(state.body.filter((e) => e.weight != null).map((e) => [e.date, e.weight]));
+
     const rows = Array.from({ length: 14 }, (_, i) => shiftKey(todayKey, -i))
-      .filter((key) => { const s = dayScore(key); return s.done > 0 || s.water > 0 || s.extra; })
+      .filter((key) => waterOf(key) > 0 || weights[key] != null)
       .map((key) => {
-        const s = dayScore(key);
-        const pips = requiredTabs().map((t) =>
-          `<span class="pip ${state.days[key].meals[t.id] ? 'is-on' : ''}"></span>`).join('') +
-          (s.extra ? '<span class="pip is-extra"></span>' : '');
+        const ratio = Math.min(1, waterOf(key) / state.prefs.goalCups);
         return `
           <div class="dayrow">
             <span class="dayrow-date">${labelKey(key)}<small>${weekday(key)}</small>${key === todayKey ? '<small>hoje</small>' : ''}</span>
             <span class="dayrow-meta">
-              <span class="pips">${pips}</span>
-              <span>${s.water * state.prefs.cupMl}ml</span>
+              ${weights[key] != null ? `<span>${weights[key]}kg</span>` : ''}
+              <span class="bar"><i style="width:${Math.round(ratio * 100)}%"></i></span>
+              <span class="${hitGoal(key) ? 'is-goal' : ''}">${mlOf(key)}ml</span>
             </span>
           </div>`;
       }).join('');
@@ -348,23 +313,23 @@
       <section>
         <span class="section-label">Últimos 30 dias</span>
         <div class="stats">
-          <div class="stat"><div class="stat-value">${adherence}<small>%</small></div><div class="stat-label">Aderência</div></div>
+          <div class="stat"><div class="stat-value">${(avg / 1000).toFixed(1)}<small> L</small></div><div class="stat-label">Média por dia</div></div>
           <div class="stat"><div class="stat-value">${streak()}<small> d</small></div><div class="stat-label">Sequência</div></div>
-          <div class="stat"><div class="stat-value">${(avgWater / 1000).toFixed(1)}<small> L</small></div><div class="stat-label">Água / dia</div></div>
+          <div class="stat"><div class="stat-value">${pct}<small>%</small></div><div class="stat-label">Dias na meta</div></div>
         </div>
       </section>
 
       <section>
-        <span class="section-label">Mapa de refeições</span>
+        <span class="section-label">Mapa de hidratação</span>
         <div class="heat">${cells}</div>
         <div class="heat-legend">
-          <span>menos</span>
+          <span>seco</span>
           <i style="background:rgba(255,255,255,.35)"></i>
-          <i style="background:rgba(16,185,129,.22)"></i>
-          <i style="background:rgba(16,185,129,.42)"></i>
-          <i style="background:rgba(16,185,129,.62)"></i>
-          <i style="background:rgba(16,185,129,.85);border-color:transparent"></i>
-          <span>mais</span>
+          <i style="background:rgba(14,165,233,.22)"></i>
+          <i style="background:rgba(14,165,233,.42)"></i>
+          <i style="background:rgba(14,165,233,.62)"></i>
+          <i style="background:rgba(14,165,233,.85);border-color:transparent"></i>
+          <span>meta</span>
         </div>
       </section>
 
@@ -492,7 +457,7 @@
 
   function viewAjustes() {
     const p = state.prefs;
-    const dayCount = Object.keys(state.days).filter((k) => { const s = dayScore(k); return s.done > 0 || s.water > 0 || s.extra; }).length;
+    const dayCount = Object.keys(state.days).filter((k) => waterOf(k) > 0).length;
     return `
       <section>
         <span class="section-label">Metas</span>
@@ -518,14 +483,6 @@
             <button data-act="cup" data-delta="50" aria-label="Aumentar">+</button>
           </span>
         </div>
-        <div class="setting">
-          <span class="setting-text">
-            <span class="setting-title">Contar pré-treino na meta</span>
-            <span class="setting-desc">Desligado: o pré-treino aparece, mas só nos dias de treino conta como extra e não derruba a aderência.</span>
-          </span>
-          <button class="switch ${p.countPreTreino ? 'is-on' : ''}" data-act="toggle-pre"
-                  role="switch" aria-checked="${p.countPreTreino}" aria-label="Contar pré-treino"></button>
-        </div>
       </section>
 
       <section>
@@ -533,7 +490,7 @@
         <div class="setting">
           <span class="setting-text">
             <span class="setting-title">Backup</span>
-            <span class="setting-desc">${dayCount} dia(s) e ${state.body.length} medição(ões) guardados só neste aparelho. Exporte de vez em quando — limpar os dados do navegador apaga tudo.</span>
+            <span class="setting-desc">${dayCount} dia(s) de água e ${state.body.length} medição(ões) guardados só neste aparelho. Exporte de vez em quando — limpar os dados do navegador apaga tudo.</span>
           </span>
         </div>
         <div class="btn-row">
@@ -669,13 +626,6 @@
         save(); paintItem(btn.dataset.meal, btn.dataset.item);
         break;
       }
-      case 'check': {
-        const d = day();
-        if (d.meals[btn.dataset.tab]) delete d.meals[btn.dataset.tab];
-        else d.meals[btn.dataset.tab] = true;
-        save(); paintCheck(btn.dataset.tab);
-        break;
-      }
       case 'copy': {
         const ok = await copyText(mealAsText(btn.dataset.meal));
         toast(ok ? 'Copiado!' : 'Não consegui copiar');
@@ -718,10 +668,6 @@
         break;
       case 'cup':
         state.prefs.cupMl = Math.min(500, Math.max(100, state.prefs.cupMl + Number(btn.dataset.delta)));
-        save(); render();
-        break;
-      case 'toggle-pre':
-        state.prefs.countPreTreino = !state.prefs.countPreTreino;
         save(); render();
         break;
       case 'export': exportData(); break;

@@ -1,0 +1,11 @@
+{
+  "name": "plano-alimentar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Guia de plano alimentar, hidratacao e medidas corporais.",
+  "devDependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}

@@ -35,11 +35,15 @@ def droplet(x, y, cx, cy, rad):
     return (d1 >= 0 and d2 >= 0 and d3 >= 0) or (d1 <= 0 and d2 <= 0 and d3 <= 0)
 
 
-def sample(x, y, maskable):
-    """Cor do ponto (x, y) em coordenadas normalizadas 0..1."""
-    if maskable:
+def sample(x, y, shape):
+    """Cor do ponto (x, y) em coordenadas normalizadas 0..1.
+    shape: 'rounded' (padrão), 'circle' (launcher redondo) ou 'full' (maskable)."""
+    if shape == 'full':
         bg_ok = True                      # ícone maskable preenche tudo
         s, off = 0.60, 0.20               # conteúdo dentro da zona segura
+    elif shape == 'circle':
+        bg_ok = (x - 0.5) ** 2 + (y - 0.5) ** 2 <= 0.5 ** 2
+        s, off = 1.0, 0.0
     else:
         bg_ok = rounded_rect(x, y, 0.22)
         s, off = 1.0, 0.0
@@ -55,7 +59,7 @@ def sample(x, y, maskable):
     return INK
 
 
-def render(size, maskable=False):
+def render(size, shape='rounded'):
     px = bytearray(size * size * 4)
     step = 1.0 / (size * SS)
     for py in range(size):
@@ -65,7 +69,7 @@ def render(size, maskable=False):
                 y = (py * SS + sy + 0.5) * step
                 for sx in range(SS):
                     x = (pxi * SS + sx + 0.5) * step
-                    c = sample(x, y, maskable)
+                    c = sample(x, y, shape)
                     r += c[0] * c[3]; g += c[1] * c[3]; b += c[2] * c[3]; a += c[3]
             n = SS * SS
             i = (py * size + pxi) * 4
@@ -91,8 +95,18 @@ def write_png(path, size, data):
     print(f'{path}  {size}x{size}  {len(png) / 1024:.1f} KB')
 
 
+# densidades do Android: pasta -> lado do ícone em px
+ANDROID_DPI = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}
+
 if __name__ == '__main__':
     os.makedirs('icons', exist_ok=True)
-    for size, name, mask in [(192, 'icon-192.png', False), (512, 'icon-512.png', False),
-                             (512, 'icon-512-maskable.png', True), (180, 'apple-touch-icon.png', False)]:
-        write_png(os.path.join('icons', name), size, render(size, mask))
+    for size, name, shape in [(192, 'icon-192.png', 'rounded'), (512, 'icon-512.png', 'rounded'),
+                              (512, 'icon-512-maskable.png', 'full'), (180, 'apple-touch-icon.png', 'rounded')]:
+        write_png(os.path.join('icons', name), size, render(size, shape))
+
+    # ícones do app Android (usados pelo build do APK)
+    for dpi, size in ANDROID_DPI.items():
+        folder = os.path.join('branding', 'android', 'mipmap-' + dpi)
+        os.makedirs(folder, exist_ok=True)
+        write_png(os.path.join(folder, 'ic_launcher.png'), size, render(size, 'rounded'))
+        write_png(os.path.join(folder, 'ic_launcher_round.png'), size, render(size, 'circle'))
